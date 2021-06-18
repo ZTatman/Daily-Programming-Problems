@@ -18,8 +18,19 @@ import sys
 # def closest_word(word):
 #   return word[::]
 
-# def lev_list(word, words):
-#   '''Returns list of levenshtein distances of words'''
+def lev_dict(query, words):
+  '''Returns a dict of word values with key levenshtein distances'''
+  lev = {}
+
+  for word in words:
+    dist = lev_dist(query, word)
+
+    if dist not in lev:
+      lev[dist] = []
+      lev[dist].append(word)
+    else:
+      lev[dist].append(word)
+  return lev
 
 def lev_dist(s, t):
   ''' Calculates levenshtein distance between str s and str t. (Dynamic Programming approach using memoization with distance matrix) '''
@@ -37,28 +48,65 @@ def lev_dist(s, t):
   
   # Find min dist between each in two words
   for i in range(1, len(s)+1):
-    print(f'i: {i}')
+    # print(f'i: {i}')
     for j in range(1, len(t)+1):
-      print(f'\tj: {j}')
-      print(f'\t\tComparing string \'{s[i-1]}\' to string \'{t[j-1]}\'')
-      print(f'\t\tdist[{i-1}][{j-1}]: {dist_matr[i-1][j-1]}')
-      print(f'\t\tdist[{i}][{j-1}]: {dist_matr[i][j-1]}')
-      print(f'\t\tdist[{i-1}][{j}]: {dist_matr[i-1][j]}')
+      # print(f'\tj: {j}')
+      # print(f'\t\tComparing string \'{s[i-1]}\' to string \'{t[j-1]}\'')
+      # print(f'\t\tdist[{i-1}][{j-1}]: {dist_matr[i-1][j-1]}')
+      # print(f'\t\tdist[{i}][{j-1}]: {dist_matr[i][j-1]}')
+      # print(f'\t\tdist[{i-1}][{j}]: {dist_matr[i-1][j]}')
+
+      # First string is empty
+      if (len(s) == 0):
+        dist_matr[i][j] = i
+      
+      # Second string is empty
+      elif (len(t) == 0):
+        dist_matr[i][j] = j
+
+      # Letters being compared are the same
       if (s[i-1] == t[j-1]):
-        # if (len(s[:i]) == len(t[:j])):
-        #   print(f'\t\t{s[:i]} and {t[:j]}')
-        dist_matr[i][j] = min(dist_matr[i-1][j-1], dist_matr[i][j-1], dist_matr[i-1][j])
-        print(f'\t\t!! dist[{i}][{j}]: {dist_matr[i][j]}')
-        # else:
-        #   dist_matr[i][j] = min(dist_matr[i-1][j-1], dist_matr[i][j-1], dist_matr[i-1][j]) + 1
-        #   print(f'\t\t?? dist[{i}][{j}]: {dist_matr[i][j]}')
+
+        # Letter being compared same as last letter compared (i.e., second 'l' in hello)
+        if (t[j-1] == t[j-2]):
+          dist_matr[i][j] = min(dist_matr[i-1][j-1], dist_matr[i][j-1], dist_matr[i-1][j]) + 1
+          # print(f'\t\tDD dist[{i}][{j}]: {dist_matr[i][j]}')
+        else:
+          dist_matr[i][j] = min(dist_matr[i-1][j-1], dist_matr[i][j-1], dist_matr[i-1][j])
+          # print(f'\t\t!! dist[{i}][{j}]: {dist_matr[i][j]}')
+
+      # Letters being compared are not the same
       else:
         dist_matr[i][j] = min(dist_matr[i-1][j-1], dist_matr[i][j-1], dist_matr[i-1][j]) + 1
-        print(f'\t\t?? dist[{i}][{j}]: {dist_matr[i][j]}')
-      print(f'\t\t{dist_matr}')
+      #   print(f'\t\t?? dist[{i}][{j}]: {dist_matr[i][j]}')
+      # print(f'\t\t-> {dist_matr}')
 
   # Levenshtein Distance
   return dist_matr[len(s)][len(t)]
+
+def find_closest(query, d):
+  words = d[min(list(d.keys()))]
+
+  def bin_search(query, d, lo, hi):
+    if hi >= lo:
+      
+      mid = lo + (hi - lo) // 2 
+      # print('Mid: {}'.format(words[mid]))
+      if query <= words[mid]:
+        # print('Closest words: {}'.format(words[:mid+1]))
+        return words[:mid+1]
+
+      elif query < words[mid]:
+        return bin_search(query, words, lo, mid)
+
+      else:
+        return bin_search(query, words, mid+1, hi)
+    else:
+      return False   
+  return bin_search(query, words, 0, len(words)-1)
+    
+
+
 
 if __name__ == '__main__':
   # read file
@@ -66,5 +114,6 @@ if __name__ == '__main__':
     num_cases = int(f.readline())
     for case in range(num_cases):
       query = f.readline().strip()
-      words = [word.lower() for word in f.readline().split(',')]
-      print(lev_dist('sittmg', 'setting'))
+      words = sorted([word.lower().strip() for word in f.readline().split(',')])
+      search_dict = lev_dict(query, words)
+      print(find_closest(query, search_dict))
